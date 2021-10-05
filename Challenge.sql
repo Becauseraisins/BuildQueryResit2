@@ -1,3 +1,4 @@
+-- Matthew Coates, Student ID 103581210
 -- MenuItem(ItemID,Descrtiption,ServesPerUnit,UnitPrice) PRIMARY KEY(ItemId)
 -- Organisation(OrgId, OrganisationName) PRIMARY KEY(OrgId)
 -- Client(ClientID,Name,Phone,OrgID) PRIMARY KEY(ClientID) FOREIGN KEY(OrgID) REFERENCES Organisation
@@ -10,6 +11,7 @@ DROP TABLE IF EXISTS [Order]
 DROP TABLE IF EXISTS MenuItem
 DROP TABLE IF EXISTS Client
 DROP TABLE IF EXISTS Organisation
+DROP VIEW IF EXISTS [Query 1]; 
 
 CREATE TABLE Organisation(
     OrgId NVARCHAR(4) PRIMARY KEY,
@@ -56,6 +58,7 @@ insert into Client values (12, 'James Hallinan','(03)5555-1234','SWUT')
 insert into Client values (15, 'Any Nguyen','(03)5555-2345','DODG')
 insert into Client values (18, 'Karen Mok','(03)5555-3456','SWUT')
 insert into Client values (21, 'Tim Baird','(03)5555-4567','DODG')
+insert into Client Values (1,'Matthew Coates','(03)5555-1233','SWUT')
 
 insert into MenuItem values (3214, 'Tropical Pizza - Large',2,16)
 insert into MenuItem values (3216, 'Tropical Pizza - Small',1,12)
@@ -96,11 +99,21 @@ ON [Order].ClientID = Client.ClientID)
 ON Concat(OrderLine.OrderDate, OrderLine.ClientID) = Concat([Order].OrderDate, [Order].ClientID)) 
 ON MenuItem.ItemID = OrderLine.ItemId)
 
-Select Organisation.OrgId, MenuItem.[Description], COUNT(Organisation.OrgId + MenuItem.[Description])
-FROM Organisation INNER JOIN (Client INNER JOIN (Orderline INNER JOIN MenuItem ON OrderLine.ItemID = MenuItem.ItemID )on Client.ClientID = OrderLine.ClientID) ON Organisation.OrgID = Client.OrgID 
+Select Organisation.OrgId,MenuItem.[Description], SUM(Orderline.Qty) AS QTY
+FROM 
+Organisation INNER JOIN 
+(Client INNER JOIN 
+(Orderline INNER JOIN 
+MenuItem ON 
+OrderLine.ItemID = MenuItem.ItemID )
+on Client.ClientID = OrderLine.ClientID) 
+ON Organisation.OrgID = Client.OrgID 
+GROUP BY Organisation.orgID,MenuItem.[Description]
 
-Select * 
-From OrderLine INNER JOIN Menuitem ON OrderLine.ItemID = MenuItem.ItemID 
+Select MenuItem.ItemID, OrderLine.ClientID, OrderLine.OrderDate, OrderLine.Qty
+From OrderLine 
+INNER JOIN Menuitem 
+ON (OrderLine.ItemID = MenuItem.ItemID)
 WHERE MenuItem.ItemID = (Select Max(ItemID) From MenuItem)
 
 Go
@@ -116,6 +129,21 @@ ON Concat(OrderLine.OrderDate, OrderLine.ClientID) = Concat([Order].OrderDate, [
 ON MenuItem.ItemID = OrderLine.ItemId)
 
 GO
+
 Select * from [Query 1]
 
+Select COUNT(*) from [Query 1]
+
 Select Count(*) From OrderLine
+-- total number of rows for both tables match, showing query 1 isn't missing or displaying extra rows
+
+Select Count( DISTINCT ClientID) From [Query 1]
+
+Select Count(ClientID) From Client
+--total number of rows for each table match
+
+Select DISTINCT DeliveryAddress From [Query 1]
+Select DISTINCT DeliveryAddress From [Order]
+--Any table (once filtered for duplicates) will contain the same data between the Database and View
+Select OrgID FROM [Query 1]
+--does not work as OrgID is NOT part of the query
